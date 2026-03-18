@@ -59,12 +59,110 @@
             opacity:0;
         }
 
-        .heartPhoto img{
+        /* album */
+        .album{
+            position:relative;
+            width:100%;
+            height:100%;
+            overflow:visible;
+        }
+
+        .album-viewport{
+            width:100%;
+            height:100%;
+            border-radius:14px;
+            overflow:hidden;
+            background:#fff;
+            box-shadow:0 18px 35px rgba(0,0,0,0.25);
+        }
+
+        .album-track{
+            display:flex;
+            width:100%;
+            height:100%;
+            transition:transform 0.45s ease;
+        }
+
+        .album-slide{
+            min-width:100%;
+            height:100%;
+        }
+
+        .album-slide img{
             width:100%;
             height:100%;
             object-fit:cover;
-            clip-path:none;
             object-position:center 20%;
+            display:block;
+        }
+
+        .album-btn{
+            position:absolute;
+            top:50%;
+            transform:translateY(-50%);
+            width:72px;
+            height:72px;
+            border:none;
+            border-radius:50%;
+            background:transparent;
+            color:#ff1a75;
+            font-size:34px;
+            line-height:1;
+            cursor:pointer;
+            z-index:2;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            padding:0;
+        }
+
+        .album-btn::before{
+            content:"";
+            position:absolute;
+            top:50%;
+            left:50%;
+            transform:translate(-50%,-50%);
+            width:54px;
+            height:54px;
+            border-radius:50%;
+            background:rgba(255,255,255,0.9);
+            border:2px solid rgba(255,255,255,0.95);
+            box-shadow:0 6px 16px rgba(0,0,0,0.2);
+            z-index:0;
+        }
+
+        .album-btn:hover::before{
+            border-color:#ff1a75;
+        }
+
+        .album-btn span{
+            position:relative;
+            z-index:1;
+            display:block;
+        }
+
+        .album-btn.prev{ left:-78px; }
+        .album-btn.next{ right:-78px; }
+
+        .album-dots{
+            position:absolute;
+            bottom:10px;
+            left:50%;
+            transform:translateX(-50%);
+            display:flex;
+            gap:8px;
+            z-index:2;
+        }
+
+        .album-dot{
+            width:8px;
+            height:8px;
+            border-radius:50%;
+            background:rgba(255,255,255,0.6);
+        }
+
+        .album-dot.active{
+            background:#ff1a75;
         }
 
         /* sexy text */
@@ -123,6 +221,11 @@
             .me{ left:25%; top:-250px; transform:rotate(-5deg);}
             .her{ left:75%; top:-250px; transform:rotate(5deg);}
             .heartPhoto{ width:250px; height:300px; }
+            .album-btn{ width:56px; height:56px; font-size:26px; }
+            .album-btn::before{ width:42px; height:42px; }
+            .album-btn.prev{ left:-60px; }
+            .album-btn.next{ right:-60px; }
+            .album-dots{ bottom:8px; }
             .letter{ font-size:28px; bottom:5%; }
             .counter{ font-size:18px; padding:8px 16px; top:20px; }
             .particle{ font-size:12px; }
@@ -134,6 +237,10 @@
             .me{ left:20%; top:-220px; transform:rotate(-5deg);}
             .her{ left:80%; top:-220px; transform:rotate(5deg);}
             .heartPhoto{ width:200px; height:250px; }
+            .album-btn{ width:48px; height:48px; font-size:22px; }
+            .album-btn::before{ width:36px; height:36px; }
+            .album-btn.prev{ left:-52px; }
+            .album-btn.next{ right:-52px; }
             .letter{ font-size:22px; bottom:3%; }
             .counter{ font-size:16px; padding:6px 12px; top:15px; }
             .particle{ font-size:10px; }
@@ -155,7 +262,20 @@
 </div>
 
 <div class="heartPhoto" id="heartPhoto">
-    <img src="together.png">
+    <div class="album" id="album">
+        <div class="album-viewport">
+            <div class="album-track" id="albumTrack">
+                <div class="album-slide"><img src="together1.png" alt=""></div>
+                <div class="album-slide"><img src="together2.png" alt=""></div>
+                <div class="album-slide"><img src="together3.png" alt=""></div>
+                <div class="album-slide"><img src="together4.png" alt=""></div>
+                <div class="album-slide"><img src="together5.png" alt=""></div>
+            </div>
+        </div>
+        <button class="album-btn prev" id="albumPrev" aria-label="Назад"><span>‹</span></button>
+        <button class="album-btn next" id="albumNext" aria-label="Вперёд"><span>›</span></button>
+        <div class="album-dots" id="albumDots"></div>
+    </div>
 </div>
 
 <div class="counter" id="counter"></div>
@@ -237,6 +357,50 @@
             setTimeout(()=>f.remove(),10000);
         },250);
     }
+
+    // album slider
+    const albumTrack = document.getElementById("albumTrack");
+    const albumSlides = Array.from(albumTrack.children);
+    const albumDots = document.getElementById("albumDots");
+    let albumIndex = 0;
+
+    function renderDots(){
+        albumDots.innerHTML="";
+        albumSlides.forEach((_, i)=>{
+            const dot=document.createElement("div");
+            dot.className="album-dot"+(i===albumIndex?" active":"");
+            dot.addEventListener("click", ()=>goToSlide(i));
+            albumDots.appendChild(dot);
+        });
+    }
+
+    function goToSlide(index){
+        albumIndex = (index + albumSlides.length) % albumSlides.length;
+        albumTrack.style.transform = `translateX(-${albumIndex * 100}%)`;
+        renderDots();
+    }
+
+    document.getElementById("albumPrev").addEventListener("click", ()=>goToSlide(albumIndex-1));
+    document.getElementById("albumNext").addEventListener("click", ()=>goToSlide(albumIndex+1));
+
+    // swipe support
+    let touchStartX = 0;
+    let touchDeltaX = 0;
+    const album = document.getElementById("album");
+    album.addEventListener("touchstart", (e)=>{
+        touchStartX = e.touches[0].clientX;
+        touchDeltaX = 0;
+    }, {passive:true});
+    album.addEventListener("touchmove", (e)=>{
+        touchDeltaX = e.touches[0].clientX - touchStartX;
+    }, {passive:true});
+    album.addEventListener("touchend", ()=>{
+        if(Math.abs(touchDeltaX) > 40){
+            goToSlide(touchDeltaX > 0 ? albumIndex-1 : albumIndex+1);
+        }
+    });
+
+    renderDots();
 </script>
 </body>
 </html>
